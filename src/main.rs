@@ -26,7 +26,7 @@ fn main() {
         Ok(val) => val,
         Err(_e) => "8888".into(),
     };
-    let address = format!("0.0.0.0:{}", port);
+    let address = format!("127.0.0.1:{}", port);
 
     env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
