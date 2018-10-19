@@ -17,16 +17,31 @@ mod types;
 
 use std::env;
 
+use clap::{Arg, App as CliApp};
 use actix_web::{http, server, App, middleware};
 
 use self::router::Router;
 
 fn main() {
-    let port = match env::var("PORT") {
-        Ok(val) => val,
-        Err(_e) => "8888".into(),
-    };
-    let address = format!("127.0.0.1:{}", port);
+    let matches = CliApp::new("sm server")
+                          .version("1.0")
+                          .author("Jiayu Ye <yejiayu@cryptape.com>")
+                          .about("Provider sm algorithm services")
+                          .arg(Arg::with_name("port")
+                               .short("p")
+                               .long("port")
+                               .help("Set server port. default 8888")
+                               .default_value("8888"))
+                          .arg(Arg::with_name("ip")
+                               .short("i")
+                               .long("ip")
+                               .help("Set server ip. default 127.0.0.1")
+                               .default_value("127.0.0.1"))
+                          .get_matches();
+
+    let port = matches.value_of("port").unwrap();
+    let ip = matches.value_of("ip").unwrap();
+    let address = format!("{}:{}", ip, port);
 
     env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
