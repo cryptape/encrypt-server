@@ -202,7 +202,7 @@ fn hex_encode<T: AsRef<[u8]>>(data: T) -> String {
     format!("0x{}", hex::encode(data))
 }
 
-#[warn(unused_imports)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
