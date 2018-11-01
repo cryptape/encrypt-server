@@ -14,21 +14,16 @@
 
 use std::fmt;
 
-use actix_web::{Path, HttpRequest, Responder, HttpResponse, Json};
-use libsm::{
-    sm2::signature::{Signature, SigCtx},
-    sm3::hash::Sm3Hash
-};
+use actix_web::{HttpRequest, HttpResponse, Json, Path, Responder};
 use hex;
+use libsm::{
+    sm2::signature::{SigCtx, Signature},
+    sm3::hash::Sm3Hash,
+};
 
 use super::types::{
-    PrivatekeyRes,
-    SignatureRawReq,
-    SignatureDigestReq,
-    SignatureRes,
-    VerificationRawReq,
-    VerificationDigestReq,
-    VerificationRes,
+    PrivatekeyRes, SignatureDigestReq, SignatureRawReq, SignatureRes, VerificationDigestReq,
+    VerificationRawReq, VerificationRes,
 };
 
 const SIGNATURE_BYTES_LEN: usize = 128;
@@ -36,8 +31,8 @@ const PUBKEY_BYTES_LEN: usize = 65;
 
 #[derive(Debug)]
 pub enum AppError {
-  FromHexError(hex::FromHexError),
-  ConverError(bool),
+    FromHexError(hex::FromHexError),
+    ConverError(bool),
 }
 
 impl fmt::Display for AppError {
@@ -51,15 +46,15 @@ impl fmt::Display for AppError {
 }
 
 impl From<hex::FromHexError> for AppError {
-  fn from(error: hex::FromHexError) -> Self {
-      AppError::FromHexError(error)
-  }
+    fn from(error: hex::FromHexError) -> Self {
+        AppError::FromHexError(error)
+    }
 }
 
 impl From<bool> for AppError {
-  fn from(error: bool) -> Self {
-      AppError::ConverError(error)
-  }
+    fn from(error: bool) -> Self {
+        AppError::ConverError(error)
+    }
 }
 
 pub struct Router {}
@@ -70,12 +65,19 @@ impl Router {
     }
 
     pub fn keypair(_req: HttpRequest) -> HttpResponse {
-        let ctx = SigCtx::new();
-        let (pk, sk) = ctx.new_keypair();
-        let pubk_hex = hex_encode(ctx.serialize_pubkey(&pk, false));
-        let privk_hex = hex_encode(sk.to_bytes_be());
+        let mut pubk_hex;
+        let mut privk_hex;
+        loop {
+            let ctx = SigCtx::new();
+            let (pk, sk) = ctx.new_keypair();
+            pubk_hex = hex_encode(ctx.serialize_pubkey(&pk, false));
+            privk_hex = hex_encode(sk.to_bytes_be());
+            if privk_hex.len() == 66 {
+                break
+            }
+        }
 
-        HttpResponse::Created().json(PrivatekeyRes{
+        HttpResponse::Created().json(PrivatekeyRes {
             public_key: pubk_hex,
             private_key: privk_hex,
         })
@@ -86,14 +88,10 @@ impl Router {
         let digest_hex = &into_digest_hex(&item.raw);
 
         match sign(privk_hex, digest_hex) {
-            Ok(signature) => {
-                HttpResponse::Created().json(SignatureRes{
-                    signature: hex_encode(signature),
-                })
-            },
-            Err(e) => {
-                HttpResponse::BadRequest().body(e.to_string())
-            },
+            Ok(signature) => HttpResponse::Created().json(SignatureRes {
+                signature: hex_encode(signature),
+            }),
+            Err(e) => HttpResponse::BadRequest().body(e.to_string()),
         }
     }
 
@@ -102,14 +100,10 @@ impl Router {
         let digest_hex = item.digest.as_str();
 
         match sign(privk_hex, digest_hex) {
-            Ok(signature) => {
-                HttpResponse::Created().json(SignatureRes{
-                    signature: hex_encode(signature),
-                })
-            },
-            Err(e) => {
-                HttpResponse::BadRequest().body(e.to_string())
-            },
+            Ok(signature) => HttpResponse::Created().json(SignatureRes {
+                signature: hex_encode(signature),
+            }),
+            Err(e) => HttpResponse::BadRequest().body(e.to_string()),
         }
     }
 
@@ -119,12 +113,8 @@ impl Router {
         let digest_hex = &into_digest_hex(&item.raw);
 
         match verify(pubk_hex, signature_hex, digest_hex) {
-            Ok(result) => {
-                HttpResponse::Ok().json(VerificationRes{ result })
-            },
-            Err(e) => {
-                HttpResponse::BadRequest().body(e.to_string())
-            }
+            Ok(result) => HttpResponse::Ok().json(VerificationRes { result }),
+            Err(e) => HttpResponse::BadRequest().body(e.to_string()),
         }
     }
 
@@ -134,12 +124,8 @@ impl Router {
         let digest_hex = item.digest.as_str();
 
         match verify(pubk_hex, signature_hex, digest_hex) {
-            Ok(result) => {
-                HttpResponse::Ok().json(VerificationRes{ result })
-            },
-            Err(e) => {
-                HttpResponse::BadRequest().body(e.to_string())
-            }
+            Ok(result) => HttpResponse::Ok().json(VerificationRes { result }),
+            Err(e) => HttpResponse::BadRequest().body(e.to_string()),
         }
     }
 }
@@ -152,7 +138,7 @@ fn sign(privk_hex: &str, data_hex: &str) -> Result<Vec<u8>, AppError> {
     let sk = ctx.load_seckey(&privk)?;
     let pk = ctx.pk_from_sk(&sk);
     let signature = ctx.sign(&data, &sk, &pk);
-    
+
     let mut sig_bytes = [0u8; SIGNATURE_BYTES_LEN];
     let r_bytes = signature.get_r().to_bytes_be();
     let s_bytes = signature.get_s().to_bytes_be();
@@ -166,15 +152,15 @@ fn verify(pubk_hex: &str, signature_hex: &str, data_hex: &str) -> Result<bool, A
     let pubk = hex_decode(pubk_hex)?;
     let sig_bytes = hex_decode(signature_hex)?;
     if sig_bytes.len() != SIGNATURE_BYTES_LEN {
-        return Ok(false)
+        return Ok(false);
     }
     let data = hex_decode(data_hex)?;
 
     if pubk.len() != PUBKEY_BYTES_LEN {
-        return Ok(false)
+        return Ok(false);
     }
     if pubk[1..] != sig_bytes[64..] {
-        return Ok(false)
+        return Ok(false);
     }
 
     let ctx = SigCtx::new();
