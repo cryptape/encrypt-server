@@ -1,0 +1,19 @@
+[package]
+name = "sm2-server"
+version = "0.1.0"
+authors = ["Jiayu Ye <yejiayu.fe@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+actix-web = "0.7.13"
+actix = "0.7"
+libsm = { git = "https://github.com/cryptape/libsm", rev = "5cc6f4d251456347f17ad836a00c8248c3563cbf" }
+futures = "0.1.23"
+clap = "2.32.0"
+
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+env_logger = "0.5"
+
+hex = "0.3.2"
