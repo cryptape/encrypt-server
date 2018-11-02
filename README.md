@@ -1,9 +1,9 @@
-# sm-server
-Sm-server is an HTTP server that provides sm algorithm services
+# encrypt-server
+encrypt-server is an HTTP server that provides sm algorithm services
 
 # Quick start
 ```shell
-$ git clone git@github.com:cryptape/sm-server.git
+$ git clone git@github.com:cryptape/encrypt-server.git
 $ PORT=8888 cargo run
 $ curl http://localhost:8888/ping
 ```
