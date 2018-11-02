@@ -65,17 +65,10 @@ impl Router {
     }
 
     pub fn keypair(_req: HttpRequest) -> HttpResponse {
-        let mut pubk_hex;
-        let mut privk_hex;
-        loop {
-            let ctx = SigCtx::new();
-            let (pk, sk) = ctx.new_keypair();
-            pubk_hex = hex_encode(ctx.serialize_pubkey(&pk, false));
-            privk_hex = hex_encode(sk.to_bytes_be());
-            if privk_hex.len() == 66 {
-                break
-            }
-        }
+        let ctx = SigCtx::new();
+        let (pk, sk) = ctx.new_keypair();
+        let pubk_hex = hex_encode(ctx.serialize_pubkey(&pk, false));
+        let privk_hex = hex_encode(ctx.serialize_seckey(&sk));
 
         HttpResponse::Created().json(PrivatekeyRes {
             public_key: pubk_hex,
@@ -208,7 +201,7 @@ mod tests {
         let ctx = SigCtx::new();
         let (pk, sk) = ctx.new_keypair();
         let pubk_hex = hex_encode(ctx.serialize_pubkey(&pk, false));
-        let privk_hex = hex_encode(sk.to_bytes_be());
+        let privk_hex = hex_encode(ctx.serialize_seckey(&sk));
         let data_hex = "0xffff";
 
         let signature = sign(&privk_hex, data_hex).unwrap();
@@ -222,7 +215,7 @@ mod tests {
         let ctx = SigCtx::new();
         let (pk, sk) = ctx.new_keypair();
         let pubk_hex = hex_encode(ctx.serialize_pubkey(&pk, false));
-        let privk_hex = hex_encode(sk.to_bytes_be());
+        let privk_hex = hex_encode(ctx.serialize_seckey(&sk));
         let data_hex = "0xffff";
 
         let signature = sign(&privk_hex, data_hex).unwrap();
